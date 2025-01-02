@@ -114,10 +114,10 @@ class DataCleaner:
             full_df = DataCleaner.normalize_smu_differences(self, full_df)
             logging.info('normalizing SMU differences.')
 
-            full_df = DataCleaner.interpolate_daily_smu(full_df)
+            full_df = DataCleaner.interpolate_daily_smu(self, full_df)
             logging.info('Interpolated missing Daily_SMU values.')
 
-            full_df = DataCleaner.remove_or_correct_anomalies(full_df)
+            full_df = DataCleaner.remove_or_correct_anomalies(self, full_df)
             logging.info('Removing or correcting anomalies with IQR.')
 
             cleaned_df = DataCleaner.filter_valid_rows(self, full_df)
@@ -125,12 +125,6 @@ class DataCleaner:
 
             cleaned_df = DataCleaner.add_min_smu_date(self, cleaned_df, min_dates)
             logging.info('Min SMU date added.')
-
-            full_df['Daily_SMU'] = (
-                full_df.groupby('Dbs_Serial_Number')['Daily_SMU']
-                .transform(lambda g: g.rolling(window=7, min_periods=1).mean())
-            )
-            logging.info('Moving average applied.')
             logging.info('Data cleaned and processed successfully.')
 
             return cleaned_df
