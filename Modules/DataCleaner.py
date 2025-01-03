@@ -73,27 +73,6 @@ class DataCleaner:
         """Keep the latest SMU for each Dbs_Serial_Number and Smu_Date."""
         idx_max_date = df.groupby(['Dbs_Serial_Number', 'Smu_Date'], sort=False)['SMU'].idxmax()
         return df.loc[idx_max_date]
-        
-    
-    def remove_or_correct_anomalies(self, df):
-        """Using IQR stats technique to remove ."""
-        
-        df.loc[(df['Daily_SMU'] > 24) | (df['Daily_SMU'] < 0), 'Daily_SMU'] = np.nan
-        
-        # Outlier detection using IQR:
-        grouped = df.groupby('Dbs_Serial_Number')
-        def iqr_outliers(group):
-            q1 = group['Daily_SMU'].quantile(0.25)
-            q3 = group['Daily_SMU'].quantile(0.75)
-            iqr = q3 - q1
-            upper_bound = q3 + 0.95 * iqr
-            lower_bound = q1 - 0.95 * iqr
-            # Set outliers to NaN
-            group.loc[(group['Daily_SMU'] > upper_bound) | (group['Daily_SMU'] < lower_bound), 'Daily_SMU'] = np.nan
-            return group
-
-        df = grouped.apply(iqr_outliers).reset_index(drop=True)
-        return df
 
     
     def process_and_clean_data(self, full_df):
@@ -113,20 +92,39 @@ class DataCleaner:
             logging.info('calculating SMU differences.')
             full_df = DataCleaner.normalize_smu_differences(self, full_df)
             logging.info('normalizing SMU differences.')
-
             full_df = DataCleaner.interpolate_daily_smu(self, full_df)
             logging.info('Interpolated missing Daily_SMU values.')
-
-            full_df = DataCleaner.remove_or_correct_anomalies(self, full_df)
-            logging.info('Removing or correcting anomalies with IQR.')
-
             cleaned_df = DataCleaner.filter_valid_rows(self, full_df)
             logging.info('filtering SMU rows.')
-
             cleaned_df = DataCleaner.add_min_smu_date(self, cleaned_df, min_dates)
             logging.info('Min SMU date added.')
             logging.info('Data cleaned and processed successfully.')
-
             return cleaned_df
         except Exception as e:
             logging.error(str(e))
+
+
+
+# full_df = DataCleaner.remove_or_correct_anomalies(self, full_df)
+# between interoplate data and filter valid rows if you put this back in the orchestrator
+# logging.info('Removing or correcting anomalies with IQR.')
+
+    # def remove_or_correct_anomalies(self, df):
+    #     """Using IQR stats technique to remove ."""
+        
+    #     df.loc[(df['Daily_SMU'] > 24) | (df['Daily_SMU'] < 0), 'Daily_SMU'] = np.nan
+        
+    #     # Outlier detection using IQR:
+    #     grouped = df.groupby('Dbs_Serial_Number')
+    #     def iqr_outliers(group):
+    #         q1 = group['Daily_SMU'].quantile(0.25)
+    #         q3 = group['Daily_SMU'].quantile(0.75)
+    #         iqr = q3 - q1
+    #         upper_bound = q3 + 0.95 * iqr
+    #         lower_bound = q1 - 0.95 * iqr
+    #         # Set outliers to NaN
+    #         group.loc[(group['Daily_SMU'] > upper_bound) | (group['Daily_SMU'] < lower_bound), 'Daily_SMU'] = np.nan
+    #         return group
+
+    #     df = grouped.apply(iqr_outliers).reset_index(drop=True)
+    #     return df
