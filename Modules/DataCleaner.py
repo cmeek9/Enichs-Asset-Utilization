@@ -52,8 +52,8 @@ class DataCleaner:
 
     
     def sort_dataframe(self, df):
-        """Sort the DataFrame to optimize groupby operations."""
-        return df.sort_values(by=['Dbs_Serial_Number', 'SMU', 'Smu_Date'], ascending=[True, True, True])
+        """Sort the DataFrame to ensure chronological order within each Serial Number."""
+        return df.sort_values(by=['Dbs_Serial_Number', 'Smu_Date'], ascending= True)
 
     
     def get_min_smu_dates(self, df):
@@ -66,13 +66,29 @@ class DataCleaner:
     def keep_latest_smu_date(self, df):
         """Keep the latest Smu_Date for each Dbs_Serial_Number and SMU."""
         idx_max_smu = df.groupby(['Dbs_Serial_Number', 'SMU'], sort=False)['Smu_Date'].idxmax()
-        return df.loc[idx_max_smu]
+        return df.loc[idx_max_smu].reset_index(drop=True)
 
     
-    def keep_latest_smu(self, df):
-        """Keep the latest SMU for each Dbs_Serial_Number and Smu_Date."""
-        idx_max_date = df.groupby(['Dbs_Serial_Number', 'Smu_Date'], sort=False)['SMU'].idxmax()
-        return df.loc[idx_max_date]
+    def keep_highest_smu_with_priority(self, df):
+        """Keep the highest SMU, prioritizing Source, for each Dbs_Serial_Number and Smu_Date."""
+        # Assign priority ranks to the Source column
+        priority_map = {'Bd': 1, 'W': 2, 'So': 3}
+        df['Source_Priority'] = df['Source'].map(priority_map).fillna(float('inf'))  # Handle cases where Source isn't in the map
+
+        # Sort by SMU (descending), Source priority (ascending), and Smu_Date (descending)
+        sorted_df = df.sort_values(
+            by=['Dbs_Serial_Number', 'Smu_Date', 'SMU', 'Source_Priority'],
+            ascending=[True, True, False, True]
+        )
+
+        # Drop duplicates to keep the row with the highest SMU for each group
+        result = sorted_df.drop_duplicates(subset=['Dbs_Serial_Number', 'Smu_Date'], keep='first').reset_index(drop=True)
+
+        # Drop the temporary Source_Priority column
+        result = result.drop(columns=['Source_Priority'], errors='ignore')
+
+        return result
+
 
     
     def process_and_clean_data(self, full_df):
@@ -86,8 +102,8 @@ class DataCleaner:
             logging.info('Min SMU dates acquired.')
             full_df = DataCleaner.keep_latest_smu_date(self, full_df)
             logging.info('keeping latest SMU date.')
-            full_df = DataCleaner.keep_latest_smu(self, full_df)
-            logging.info('keeping latest SMU.')
+            full_df = DataCleaner.keep_highest_smu_with_priority(self, full_df)
+            logging.info('keeping latest SMU on priority.')
             full_df = DataCleaner.calculate_differences(self, full_df)
             logging.info('calculating SMU differences.')
             full_df = DataCleaner.normalize_smu_differences(self, full_df)
