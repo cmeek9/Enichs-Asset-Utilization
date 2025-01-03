@@ -75,19 +75,20 @@ class DataCleaner:
         priority_map = {'Bd': 1, 'W': 2, 'So': 3}
         df['Source_Priority'] = df['Source'].map(priority_map).fillna(float('inf'))  # Handle cases where Source isn't in the map
 
-        # Sort by SMU (descending), Source priority (ascending), and Smu_Date (descending)
+        # Sort primarily by Dbs_Serial_Number and Smu_Date to preserve downstream expectations
         sorted_df = df.sort_values(
             by=['Dbs_Serial_Number', 'Smu_Date', 'SMU', 'Source_Priority'],
             ascending=[True, True, False, True]
         )
 
-        # Drop duplicates to keep the row with the highest SMU for each group
+        # Drop duplicates to retain the highest SMU for each group
         result = sorted_df.drop_duplicates(subset=['Dbs_Serial_Number', 'Smu_Date'], keep='first').reset_index(drop=True)
 
         # Drop the temporary Source_Priority column
         result = result.drop(columns=['Source_Priority'], errors='ignore')
 
         return result
+
 
 
     
