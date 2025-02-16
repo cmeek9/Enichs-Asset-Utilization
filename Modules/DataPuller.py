@@ -1,25 +1,22 @@
-from sqlalchemy import create_engine
 import pandas as pd
-from config import logging
+from config import logging, pull_engine
 
 class DataPuller:
     """
     A class for pulling data from a stored procedure into a pandas DataFrame.
     """
 
-    def __init__(self, connection_str):
+    def __init__(self):
         """
-        Initialize the DataPuller with a database connection string.
+        Initialize the DataPuller with the shared database connection engine.
         """
-        self.connection_str = connection_str
-        self.engine = create_engine(connection_str)
+        self.engine = pull_engine  # Use the centralized engine
 
-    def pull_data_with_stored_proc(self, stored_proc):
+    def pull_data_with_stored_proc(self):
         """
         Pulls data from a stored procedure into a pandas DataFrame.
         """
         try:
-            # Call the stored procedure
             query = "EXEC dbo.sp_AssetUtilization_GetAllData"
         
             # Pull data in batches for large result sets

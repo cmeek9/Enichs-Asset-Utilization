@@ -1,67 +1,43 @@
 from Modules.DataPuller import DataPuller
-from Modules.DataAnalyzer import DataAnalyzer
-from Modules.DataCleaner import DataCleaner
 from Modules.DataHandler import DataHandler
-from config import *
+from Modules.EquipmentUsageAnalyzer import EquipmentUsageAnalyzer
+from config import logging
 import time
 
 def main():
+    logging.info(f"Starting the program.")
 
-    print(f"Starting the program.")
+    # ETL process steps
+    logging.info(f"Starting extraction process for data.")
 
-    # all ETL processes are called as steps with variables housing data unil upload
-    print()
-    print(f"Starting extraction process for data.")
-    print()
-
-    
-    data_puller = DataPuller(pull_conxn_str)
+    data_puller = DataPuller()
 
     # Extraction
     start_time = time.time()
-    full_df = data_puller.pull_data_with_stored_proc(pull_conxn_str) 
+    full_df = data_puller.pull_data_with_stored_proc()
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print(f"extraction took {elapsed_time:.2f} seconds.")
+    logging.info(f"extraction took {elapsed_time:.2f} seconds.")
 
-    print()
-    print(f"Starting transformation process for data.")
-    print()
+    logging.info(f"Starting transformation process for data.")
     
-    # Transform
-    data_cleaner = DataCleaner()
+    # Initialize new analyzer
+    analyzer = EquipmentUsageAnalyzer()
 
+    # Analyze usage (cleaning and transforming steps)
     start_time = time.time()
-    cleaned_df = data_cleaner.process_and_clean_data(full_df) # in main
-
-    # generic time frames needed for average SMU hours inbetween these
-    days_list = [10, 30, 90, 180, 365]
-
-    data_analyzer = DataAnalyzer
-
-    average_usage_df = data_analyzer.calculate_average_hours_per_day(cleaned_df, days_list)
-
-    smu_idx = average_usage_df.groupby(['Dbs_Serial_Number'])['SMU'].idxmax()
-    average_usage_df = average_usage_df.loc[smu_idx].reset_index(drop=True)
-
+    results_df = analyzer.analyze_usage(full_df)
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print(f"transformation took {elapsed_time:.2f} seconds.")
-    
+    logging.info(f"transformation took {elapsed_time:.2f} seconds.")
 
-    print()
-    print(f"Starting Load process for data.")
-    print()
+    logging.info(f"Starting Load process for data.")
 
     # Load
-    data_handler = DataHandler(load_conxn_str)
-    data_handler.write_new_data_to_sql(average_usage_df, 'CMtest_assetUtilization')
+    data_handler = DataHandler()  # Removed load_conxn_str
+    data_handler.write_new_data_to_sql(results_df, 'CMtest_assetUtilization')
 
+    logging.info(f"Asset Utilization Complete.")
 
-    print(f"DONE.")
-
-
-
-#  standard way of calling main, tells where to kick the python project from aka entry point
 if __name__ == '__main__':
     main()

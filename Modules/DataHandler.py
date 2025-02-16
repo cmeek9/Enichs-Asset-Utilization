@@ -1,18 +1,16 @@
-from sqlalchemy import create_engine
 import pandas as pd
-from config import logging
+from config import logging, load_engine
 
 class DataHandler:
     """
     A class for handling data operations with a SQL database.
     """
 
-    def __init__(self, connection_str):
+    def __init__(self):
         """
-        Initialize the DataHandler with a database connection string.
+        Initialize the DataHandler with the centralized database connection engine.
         """
-        self.connection_str = connection_str
-        self.engine = create_engine(connection_str, fast_executemany=True)
+        self.engine = load_engine  # The centralized engine
 
     def write_new_data_to_sql(self, df, table_name):
         """
@@ -24,4 +22,3 @@ class DataHandler:
                 logging.info(f"Replaced table '{table_name}' with {len(df)} rows.")
         except Exception as e:
             logging.error(f"An error occurred while writing to the table '{table_name}': {str(e)}")
-
