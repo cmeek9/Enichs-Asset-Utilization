@@ -58,11 +58,9 @@ class EquipmentUsageAnalyzer:
         df = df.drop_duplicates(['Serial_Number', 'Smu_Date', 'SMU'])
         logging.info(f"After deduplication: {len(df)} rows")
 
-        # Preprocess data
         processed_df = self.preprocess_data(df)
         logging.info("Preprocessing complete.")
 
-        # Define time windows
         windows = {'10D': 10, '30D': 30, '90D': 90, '180D': 180, '365D': 365}
         
         # Create window start dates once
@@ -80,7 +78,6 @@ class EquipmentUsageAnalyzer:
                 start_date, reference_date, inclusive='both'
             )
         
-        # Initialize results list
         results = []
         
         # For each serial, get the latest entry info once
@@ -113,7 +110,7 @@ class EquipmentUsageAnalyzer:
                     'Source': latest['Source']
                 }
                 
-                max_rate_per_day = 24
+                max_rate_per_day = 24 # setting hard caps for averages per window
                 
                 # Process each time window once
                 for window_name, days in windows.items():
@@ -135,8 +132,7 @@ class EquipmentUsageAnalyzer:
                             np.where(time_diff_days.values == 0, np.inf, time_diff_days.values)
                         )
                         capped_rate = np.clip(daily_rate, 0, max_rate_per_day)
-                        
-                        # Use NumPy for better performance
+
                         time_diff_mask = time_diff_days.values > 0
                         capped_diff = np.zeros_like(capped_rate)
                         capped_diff[time_diff_mask] = capped_rate[time_diff_mask] * time_diff_days.values[time_diff_mask]
@@ -161,11 +157,9 @@ class EquipmentUsageAnalyzer:
                 logging.error(f"Error analyzing serial {serial}: {str(e)}")
                 continue
         
-        # Convert results to DataFrame
         results_df = pd.DataFrame(results)
         logging.info(f"Serial group analysis complete: analyzed {len(results)} groups.")
         
-        # Compute Weighted_Avg_Usage
         if not results_df.empty:
             results_df['Weighted_Avg_Usage'] = results_df.apply(
                 lambda row: self.compute_weighted_usage(row), axis=1
