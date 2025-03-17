@@ -35,7 +35,7 @@ def main():
 
     # Load
     data_handler = DataHandler()  # Removed load_conxn_str
-    data_handler.write_new_data_to_sql(results_df, 'CMtest_assetUtilization')
+    data_handler.write_new_data_to_sql(results_df, 'Prod_AssetUtilization')
 
     logging.info(f"Asset Utilization Complete.")
 
