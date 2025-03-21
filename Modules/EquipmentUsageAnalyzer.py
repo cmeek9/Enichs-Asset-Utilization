@@ -159,6 +159,10 @@ class EquipmentUsageAnalyzer:
         
         results_df = pd.DataFrame(results)
         logging.info(f"Serial group analysis complete: analyzed {len(results)} groups.")
+
+        # Filter out rows where Weighted_Avg_Usage is null
+        results_df = results_df.dropna(subset=['Weighted_Avg_Usage'])
+        logging.info(f"Filtered out {len(df) - len(results_df)} rows with null Weighted_Avg_Usage values.")
         
         if not results_df.empty:
             results_df['Weighted_Avg_Usage'] = results_df.apply(
